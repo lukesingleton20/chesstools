@@ -57,10 +57,21 @@ retrieve_lichess_games <- function(player){
 
   flattened_raw_games <- unlist(split_raw_games)
 
+  # after extensive testing, there are a number of edge cases which result in a game
+  # having a non-standard number of game information elements;
+  # easiest to remove an entire game whilst it is in vector form here
+
+  cleaned_games <- flattened_raw_games[grepl("FEN",flattened_raw_games) == FALSE &
+                                   grepl("SetUp",flattened_raw_games) == FALSE &
+                                   grepl("BlackTitle",flattened_raw_games) == FALSE &
+                                   grepl("WhiteTitle",flattened_raw_games) == FALSE &
+                                   grepl("WhiteRatingDiff",flattened_raw_games) == TRUE &
+                                   grepl("BlackRatingDiff",flattened_raw_games) == TRUE]
+
   # the final stage is to create a list of games, where each element of the top-level list
   # contains a sub-list, with an element for each line of game information
 
-  raw_games_list <- strsplit(flattened_raw_games, "\n")
+  raw_games_list <- strsplit(cleaned_games, "\n")
 
   # now we must remove the empty elements within the sublists;
   # given that Lichess always returns games in a 20 line format
@@ -138,5 +149,5 @@ retrieve_lichess_games <- function(player){
   # given that the output is implicitly returned but, given I'm probably a little old school,
   # I opted for the explicit return
 
-  return(games_dataframe)
+  return(final_dataframe)
 }
