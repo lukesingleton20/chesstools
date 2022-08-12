@@ -149,5 +149,5 @@ retrieve_lichess_games <- function(player){
   # given that the output is implicitly returned but, given I'm probably a little old school,
   # I opted for the explicit return
 
-  return(final_dataframe)
+  return(games_dataframe)
 }
