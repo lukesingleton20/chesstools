@@ -33,7 +33,7 @@ devtools::install_github("lukesingleton20/chesstools")
 
 This is a basic example which shows you how to solve a common problem:
 
-```{r example}
+```{r get_raw, eval = FALSE}
 library(chesstools)
-retrieve_lichess_games(player = "SingletonChess")
+retrieve_lichess_games(player = "Lichess Username")
 ```
