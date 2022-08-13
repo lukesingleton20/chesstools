@@ -5,7 +5,7 @@
 #' @param player A Lichess username
 #'
 #' @return A dataframe where all elements are characters
-#' @import httr
+#' @import httr, curl
 #' @export
 #'
 #' @examples
@@ -14,7 +14,7 @@ retrieve_lichess_games <- function(player){
   # first, we do a cursory check that player is a valid Lichess username
 
   if(httr::GET(paste0("https://lichess.org/@/",player))$status_code == 404){
-    stop("This Lichess username does not exist.")
+    return("This Lichess username does not exist.")
   }
 
   # create temporary file
@@ -46,10 +46,10 @@ retrieve_lichess_games <- function(player){
   read_raw_games <- readLines(tmp)
 
   # to handle those cases where a player has played no games on Lichess,
-  # stop the function and return an error message
+  # return an error message instead of a null dataframe
 
   if(length(read_raw_games) == 0){
-    stop("Player has played no games on Lichess.")
+    return("Player has played no games on Lichess.")
   }
 
   # the next stage is to convert to a character vector that contains a game per element
@@ -159,6 +159,7 @@ retrieve_lichess_games <- function(player){
   # we clear any automatically given row names from the data.frame function
 
   rownames(games_dataframe) <- c()
+
 
   # I'm aware of the debate around whether or not you should explicitly return output in R,
   # given that the output is implicitly returned but, given I'm probably a little old school,
