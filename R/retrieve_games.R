@@ -5,6 +5,7 @@
 #' @param player A Lichess username
 #'
 #' @return A dataframe where all elements are characters
+#' @import httr
 #' @export
 #'
 #' @examples
@@ -12,7 +13,7 @@ retrieve_lichess_games <- function(player){
 
   # first, we do a cursory check that player is a valid Lichess username
 
-  if(GET(paste0("https://lichess.org/@/",player))$status_code == 404){
+  if(httr::GET(paste0("https://lichess.org/@/",player))$status_code == 404){
     stop("This Lichess username does not exist.")
   }
 
@@ -75,13 +76,10 @@ retrieve_lichess_games <- function(player){
   # easiest to remove an entire game whilst it is in vector form here
 
   # "FEN" and "SetUp" only appear in games that were abandoned at the end arena tournaments
-  # BlackTitle and WhiteTitle only appear when a player has a FIDE title
   # The absence of WhiteRatingDiff and BlackRatingDiff is an extremely rare case
 
   cleaned_games <- flattened_raw_games[grepl("FEN",flattened_raw_games) == FALSE &
                                    grepl("SetUp",flattened_raw_games) == FALSE &
-                                   grepl("BlackTitle",flattened_raw_games) == FALSE &
-                                   grepl("WhiteTitle",flattened_raw_games) == FALSE &
                                    grepl("WhiteRatingDiff",flattened_raw_games) == TRUE &
                                    grepl("BlackRatingDiff",flattened_raw_games) == TRUE]
 
@@ -90,18 +88,18 @@ retrieve_lichess_games <- function(player){
 
   raw_games_list <- strsplit(cleaned_games, "\n")
 
-  # now we must remove the empty elements within the sublists;
-  # given that Lichess always returns games in a 20 line format
-  # (although after the above operations, each game sub-list is now 19 elements),
-  # we could have hardcoded this to remove elements 17 and 19 but, for scalability
-  # and future-proofing, it is prudent to specify the removal of elements only containing ""
+  # now we must remove the empty elements within the sublist and those
+  # elements that appear only rarely (such as the title of a FIDE titled player)
+  # which cause a nonstandard number of elements
 
-  # this was a difficult function to get to work as intended;
   # lapply() applies a function to every element within a list and its sublists
-  # this custom function only keeps elements that are not "" (!="")
+  # this custom function only keeps elements that are not "" (!="") and
+  # those elements that do not contain either "BlackTitle" or "WhiteTitle"
 
-  cleaned_games_list <- lapply(raw_games_list,function(remove_empty_list){
-    remove_empty_list[remove_empty_list != ""]
+  cleaned_games_list <- lapply(raw_games_list,function(remove_elements){
+    remove_elements[remove_elements != "" &
+                      grepl("BlackTitle",remove_elements) == FALSE &
+                      grepl("WhiteTitle",remove_elements) == FALSE]
   })
 
   # now we must ensure the game moves element matches the rest of the elements
