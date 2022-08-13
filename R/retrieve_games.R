@@ -38,6 +38,13 @@ retrieve_lichess_games <- function(player){
 
   read_raw_games <- readLines(tmp)
 
+  # to handle those cases where a player has played no games on Lichess,
+  # stop the function and return an error message
+
+  if(length(read_raw_games) == 0){
+    stop("Player has played no games on Lichess.")
+  }
+
   # the next stage is to convert to a character vector that contains a game per element
   # rather than a line per element (i.e. each game within read_raw_games takes up 20 elements)
 
@@ -61,6 +68,10 @@ retrieve_lichess_games <- function(player){
   # having a non-standard number of game information elements;
   # easiest to remove an entire game whilst it is in vector form here
 
+  # "FEN" and "SetUp" only appear in games that were abandoned at the end arena tournaments
+  # BlackTitle and WhiteTitle only appear when a player has a FIDE title
+  # The absence of WhiteRatingDiff and BlackRatingDiff is an extremely rare case
+
   cleaned_games <- flattened_raw_games[grepl("FEN",flattened_raw_games) == FALSE &
                                    grepl("SetUp",flattened_raw_games) == FALSE &
                                    grepl("BlackTitle",flattened_raw_games) == FALSE &
@@ -68,7 +79,7 @@ retrieve_lichess_games <- function(player){
                                    grepl("WhiteRatingDiff",flattened_raw_games) == TRUE &
                                    grepl("BlackRatingDiff",flattened_raw_games) == TRUE]
 
-  # the final stage is to create a list of games, where each element of the top-level list
+  # the next stage is to create a list of games, where each element of the top-level list
   # contains a sub-list, with an element for each line of game information
 
   raw_games_list <- strsplit(cleaned_games, "\n")
