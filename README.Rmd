@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-Chesstools provides the user with functions to download games of an individual player from both of the popular chess websites.
+Chesstools provides the user with functions to download games of one or more players from Lichess. All rated games will be retrieved in a standard dataframe. Note that all data will be in the character format.
 
 ## Installation
 
@@ -35,5 +35,5 @@ This is a basic example which shows you how to solve a common problem:
 
 ```{r get_raw, eval = FALSE}
 library(chesstools)
-retrieve_lichess_games(player = "Lichess Username")
+retrieve_lichess_games(c("Lichess Username 1", "Lichess Username 2"))
 ```
