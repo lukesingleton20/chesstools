@@ -10,6 +10,12 @@
 #' @examples
 retrieve_lichess_games <- function(player){
 
+  # first, we do a cursory check that player is a valid Lichess username
+
+  if(GET(paste0("https://lichess.org/@/",player))$status_code == 404){
+    stop("This Lichess username does not exist.")
+  }
+
   # create temporary file
 
   tmp <- tempfile()
