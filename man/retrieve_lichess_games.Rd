@@ -4,14 +4,14 @@
 \alias{retrieve_lichess_games}
 \title{Retrieve Lichess Games}
 \usage{
-retrieve_lichess_games(player)
+retrieve_lichess_games(players)
 }
 \arguments{
-\item{player}{A Lichess username}
+\item{player}{One or more Lichess usernames}
 }
 \value{
 A dataframe where all elements are characters
 }
 \description{
-This function retrieves the bullet, blitz, rapid and classical rated games for a single player
+This function retrieves rated games for one or more players from Lichess.
 }
