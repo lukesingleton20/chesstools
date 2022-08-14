@@ -226,23 +226,23 @@ retrieve_chesscom_games <- function(players){
     # nb: two extra new line characters are required after the last game as these
     # are present between games but not for the last game in a monthly archive
 
-    for(month in player_history){
-      tmp <- tempfile()
-      curl::curl_download(paste0(player_history,"/pgn"),tmp)
-      read_raw_monthly_games <- readLines(tmp)
-      collapsed_raw_monthly_games <- paste(read_raw_monthly_games, collapse = "\n")
-      raw_games[player_history] <- paste0(collapsed_raw_monthly_games,"\n\n")
-    }
-
     # we then collapse the vector so that there is one vector with a single element
     # that contains every game, rather than each element being a set of monthly games
 
-    collapsed_raw_games <- paste(raw_games, collapse = "\n")
+    count <- 0
+    for(month in player_history){
+      tmp <- tempfile()
+      curl::curl_download(paste0(month,"/pgn"),tmp)
+      read_raw_monthly_games <- readLines(tmp)
+      collapsed_raw_monthly_games <- paste(read_raw_monthly_games, collapse = "\n")
+      raw_games[count] <- paste0(collapsed_raw_monthly_games,"\n\n")
+      count <- count + 1
+    }
 
     # it is easiest to remove the engine evaluations here, so remove everything
     # from between the curly brackets and then restore the black move notation from ...
 
-    removed_evalutaion <- gsub("\\{[^\\}]*\\}\\s", "", collapsed_raw_games)
+    removed_evalutaion <- gsub("\\{[^\\}]*\\}\\s", "", raw_games)
     hundred_postfix <- gsub("\\d\\d\\d\\.{3} ","",removed_evalutaion)
     ten_postfix <- gsub("\\d\\d\\.{3} ","",hundred_postfix)
     cleaned_raw_games <- gsub("\\d\\.{3} ","",ten_postfix)
@@ -259,10 +259,21 @@ retrieve_chesscom_games <- function(players){
     # the next stage is to create a list of games, where each element of the top-level list
     # contains a sub-list, with an element for each line of game information
 
-    raw_games_list <- strsplit(flattened_raw_games, "\n")
+    # remove those games that were abandoned before a result was reached, removing strange Chess.com
+    # variants, ensuring a first move was played and that it had a categorized opening (this avoids
+    # niche cases of puzzle battles)
+
+    cleaned_raw_games <- flattened_raw_games[grepl("abandoned",flattened_raw_games) == FALSE &
+                                               grepl("[Variant",flattened_raw_games, fixed = TRUE) == FALSE &
+                                               grepl("1. ",flattened_raw_games, fixed = TRUE) == TRUE &
+                                               grepl("ECO", flattened_raw_games) == TRUE]
+
+    raw_games_list <- strsplit(cleaned_raw_games, "\n")
 
     # now we must remove the empty elements within the sublist & extraneous game information
     # lapply() applies a function to every element within a list and its sublists
+    # tournaments here only provide a link and not the name of the tournament so isn't
+    # that useful and rounds only apply to those tournaments
 
     cleaned_games_list <- lapply(raw_games_list,function(remove_elements){
       remove_elements[remove_elements != "" &
