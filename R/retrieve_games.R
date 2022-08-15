@@ -295,9 +295,6 @@ retrieve_chesscom_games <- function(players){
       flattened_raw_games[game] <- replacement
     }
 
-    # the next stage is to create a list of games, where each element of the top-level list
-    # contains a sub-list, with an element for each line of game information
-
     # remove those games that were abandoned before a result was reached, removing strange Chess.com
     # variants, ensuring a first move was played and that it had a categorized opening (this avoids
     # niche cases of puzzle battles)
@@ -306,6 +303,9 @@ retrieve_chesscom_games <- function(players){
                                                grepl("[Variant",flattened_raw_games, fixed = TRUE) == FALSE &
                                                grepl("1. ",flattened_raw_games, fixed = TRUE) == TRUE &
                                                grepl("ECO", flattened_raw_games) == TRUE]
+
+    # the next stage is to create a list of games, where each element of the top-level list
+    # contains a sub-list, with an element for each line of game information
 
     raw_games_list <- strsplit(cleaned_raw_games, "\n")
 
@@ -399,6 +399,17 @@ retrieve_chesscom_games <- function(players){
       chesscom_dataframe <- rbind(chesscom_dataframe,player_dataframe)
     }
   }
+
+  # now to convert certain columns from characters into the relevant datatype
+
+  chesscom_dataframe$WhiteElo <- as.integer(chesscom_dataframe$WhiteElo)
+  chesscom_dataframe$BlackElo <- as.integer(chesscom_dataframe$BlackElo)
+  chesscom_dataframe$Date <- as.Date(chesscom_dataframe$Date, format = "%Y/%m/%d")
+  chesscom_dataframe$UTCDate <- as.Date(chesscom_dataframe$UTCDate, format = "%Y/%m/%d")
+  chesscom_dataframe$EndDate <- as.Date(chesscom_dataframe$EndDate, format = "%Y/%m/%d")
+  chesscom_dataframe$UTCTime <- strptime(chesscom_dataframe$UTCTime, format = "%H:%M:%S")
+  chesscom_dataframe$StartTime <- strptime(chesscom_dataframe$StartTime, format = "%H:%M:%S")
+  chesscom_dataframe$EndTime <- strptime(chesscom_dataframe$EndTime, format = "%H:%M:%S")
 
   return(chesscom_dataframe)
 
