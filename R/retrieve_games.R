@@ -262,9 +262,9 @@ retrieve_chesscom_games <- function(players){
     tournament_games_index <- which(grepl("[Tournament",flattened_raw_games, fixed = TRUE))
 
     for(game in tournament_games_index){
-      tournament <- sub(".*https://www.chess.com/tournament/live/","",flattened_raw_games[game])
+      tournament <- sub(".*https://www.chess.com/tournament/","",flattened_raw_games[game])
       tournament <- sub("\".*", "",tournament)
-      replacement <- sub(" .*?\"\\]",paste0(" ",tournament),flattened_raw_games[game])
+      replacement <- sub(" .*?\"\\]",paste0(" \"",tournament,"\"\\]"),flattened_raw_games[game])
       flattened_raw_games[game] <- replacement
     }
 
@@ -284,8 +284,8 @@ retrieve_chesscom_games <- function(players){
 
     # now we must remove the empty elements within the sublist & extraneous game information
     # lapply() applies a function to every element within a list and its sublists
-    # tournaments here only provide a link and not the name of the tournament so isn't
-    # that useful and rounds only apply to those tournaments
+    # tournaments have been dealt with previously
+    # note that "Round" always returns "-", even for tournament games, so can remove
 
     cleaned_games_list <- lapply(raw_games_list,function(remove_elements){
                         remove_elements[remove_elements != "" &
@@ -296,7 +296,8 @@ retrieve_chesscom_games <- function(players){
                         grepl("[Timezone",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[ECOUrl",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Link",remove_elements, fixed = TRUE) == FALSE &
-                        grepl("Match",remove_elements, fixed = TRUE) == FALSE]
+                        grepl("[Round",remove_elements, fixed = TRUE) == FALSE &
+                        grepl("[Match",remove_elements, fixed = TRUE) == FALSE]
     })
 
     # now we must ensure the game moves element matches the rest of the elements
