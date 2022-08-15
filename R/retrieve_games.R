@@ -72,6 +72,32 @@ retrieve_lichess_games <- function(players){
 
     flattened_raw_games <- unlist(split_raw_games)
 
+    # for club players, playing against a titled player is rare so, rather than
+    # having a column that is blank in 99% of cases, we'll remove these columns
+    # but retain the information by appending the title to the player column
+
+    white_title_index <- which(grepl("[WhiteTitle",flattened_raw_games, fixed = TRUE))
+
+    for(game in white_title_index){
+      white_title <- sub(".*\\[WhiteTitle \"","",flattened_raw_games[game])
+      white_title <- sub("\".*", "",white_title)
+      user_name <- sub(".*\\[White \"","",flattened_raw_games[game])
+      user_name <- sub("\".*", "",user_name)
+      replacement <- sub("\\[White \".*?\"\\]",paste0("\\[White \"",user_name," \\(",white_title,"\\)\"\\]"),flattened_raw_games[game])
+      flattened_raw_games[game] <- replacement
+    }
+
+    black_title_index <- which(grepl("[BlackTitle",flattened_raw_games, fixed = TRUE))
+
+    for(game in black_title_index){
+      black_title <- sub(".*\\[BlackTitle \"","",flattened_raw_games[game])
+      black_title <- sub("\".*", "",black_title)
+      user_name <- sub(".*\\[Black \"","",flattened_raw_games[game])
+      user_name <- sub("\".*", "",user_name)
+      replacement <- sub("\\[Black \".*?\"\\]",paste0("\\[Black \"",user_name," \\(",black_title,"\\)\"\\]"),flattened_raw_games[game])
+      flattened_raw_games[game] <- replacement
+    }
+
     # after extensive testing, there are a number of edge cases which result in a game
     # having a non-standard number of game information elements;
     # easiest to remove an entire game whilst it is in vector form here
@@ -98,6 +124,7 @@ retrieve_lichess_games <- function(players){
     # lapply() applies a function to every element within a list and its sublists
     # this custom function only keeps elements that are not "" (!="") and
     # those elements that do not contain either "BlackTitle" or "WhiteTitle"
+    # note that titles are dealt with above
 
     cleaned_games_list <- lapply(raw_games_list,function(remove_elements){
       remove_elements[remove_elements != "" &
@@ -297,6 +324,7 @@ retrieve_chesscom_games <- function(players){
                         grepl("[ECOUrl",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Link",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Round",remove_elements, fixed = TRUE) == FALSE &
+                        grepl("[Site",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Match",remove_elements, fixed = TRUE) == FALSE]
     })
 
