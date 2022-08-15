@@ -189,7 +189,7 @@ retrieve_lichess_games <- function(players){
 #' @param players One or more Chess.com usernames
 #'
 #' @return A dataframe where all elements are characters.
-#' @import jsonlite, httr, curl
+#' @import jsonlite, httr, curl, stringr
 #' @export
 #'
 #' @examples
@@ -256,6 +256,18 @@ retrieve_chesscom_games <- function(players){
 
     flattened_raw_games <- unlist(split_raw_games)
 
+    # for some reason, chess.com does not store the name of the tournament in the
+    # "event" game information so we'll rectify that here
+
+    tournament_games_index <- which(grepl("[Tournament",flattened_raw_games, fixed = TRUE))
+
+    for(game in tournament_games_index){
+      tournament <- sub(".*https://www.chess.com/tournament/live/","",flattened_raw_games[game])
+      tournament <- sub("\".*", "",tournament)
+      replacement <- sub(" .*?\"\\]",paste0(" ",tournament),flattened_raw_games[game])
+      flattened_raw_games[game] <- replacement
+    }
+
     # the next stage is to create a list of games, where each element of the top-level list
     # contains a sub-list, with an element for each line of game information
 
@@ -276,15 +288,15 @@ retrieve_chesscom_games <- function(players){
     # that useful and rounds only apply to those tournaments
 
     cleaned_games_list <- lapply(raw_games_list,function(remove_elements){
-      remove_elements[remove_elements != "" &
+                        remove_elements[remove_elements != "" &
                         grepl("[FEN",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[SetUp",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Tournament",remove_elements, fixed = TRUE) == FALSE &
-                        grepl("[Round",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[CurrentPosition",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[Timezone",remove_elements, fixed = TRUE) == FALSE &
                         grepl("[ECOUrl",remove_elements, fixed = TRUE) == FALSE &
-                        grepl("[Link",remove_elements, fixed = TRUE) == FALSE]
+                        grepl("[Link",remove_elements, fixed = TRUE) == FALSE &
+                        grepl("Match",remove_elements, fixed = TRUE) == FALSE]
     })
 
     # now we must ensure the game moves element matches the rest of the elements
