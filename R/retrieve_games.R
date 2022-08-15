@@ -206,6 +206,13 @@ retrieve_lichess_games <- function(players){
     }
   }
 
+  # now to convert certain columns from characters into the relevant datatype
+
+  lichess_dataframe$WhiteElo <- as.integer(lichess_dataframe$WhiteElo)
+  lichess_dataframe$WhiteRatingDiff <- as.integer(lichess_dataframe$WhiteRatingDiff)
+  lichess_dataframe$BlackElo <- as.integer(lichess_dataframe$BlackElo)
+  lichess_dataframe$BlackRatingDiff <- as.integer(lichess_dataframe$BlackRatingDiff)
+
   return(lichess_dataframe)
 }
 
@@ -404,12 +411,6 @@ retrieve_chesscom_games <- function(players){
 
   chesscom_dataframe$WhiteElo <- as.integer(chesscom_dataframe$WhiteElo)
   chesscom_dataframe$BlackElo <- as.integer(chesscom_dataframe$BlackElo)
-  chesscom_dataframe$Date <- as.Date(chesscom_dataframe$Date, format = "%Y/%m/%d")
-  chesscom_dataframe$UTCDate <- as.Date(chesscom_dataframe$UTCDate, format = "%Y/%m/%d")
-  chesscom_dataframe$EndDate <- as.Date(chesscom_dataframe$EndDate, format = "%Y/%m/%d")
-  chesscom_dataframe$UTCTime <- strptime(chesscom_dataframe$UTCTime, format = "%H:%M:%S")
-  chesscom_dataframe$StartTime <- strptime(chesscom_dataframe$StartTime, format = "%H:%M:%S")
-  chesscom_dataframe$EndTime <- strptime(chesscom_dataframe$EndTime, format = "%H:%M:%S")
 
   return(chesscom_dataframe)
 

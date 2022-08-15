@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-Chesstools provides the user with functions to download games of one or more players from Lichess and Chess.com. All rated games will be retrieved in a standard dataframe. Note that all data will be in the character format.
+Chesstools provides the user with functions to download all rated games of one or more players from Lichess and Chess.com, returned in a standardised dataframe.
 
 ## Installation
 
