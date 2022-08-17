@@ -74,22 +74,22 @@ pgn_to_dataframe <- function(input_pgn){
 
           while(grepl("\\(|\\)|\\{|\\}",pgn_game_info) == TRUE){
             pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\([^\\(]*?\\)"," ") %>%
-                             stringr::str_replace_all(pgn_game_info,"\\{[^\\{]*?\\}"," ")
+                             stringr::str_replace_all(.,"\\{[^\\{]*?\\}"," ")
           }
           # this removes information such as arrows
           pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\$\\d{1,2}"," ") %>%
           # this removes extended black notation (i.e. 7...) that is added around
           # comments and variations
-                           stringr::str_replace_all(pgn_game_info,"\\d{1,3}\\.{3}"," ") %>%
+                           stringr::str_replace_all(.,"\\d{1,3}\\.{3}"," ") %>%
           # we then restore any extraneous whitespace to a single space
-                           stringr::str_replace_all(pgn_game_info,"\\s+"," ")
+                           stringr::str_replace_all(.,"\\s+"," ")
         }
 
         # for the final input into the dataframe element, we remove the game
         # information prefix (i.e. "[Event \")
         final_input <- sub(".* \"","",pgn_game_info) %>%
         # trimming the whitespace from both the front and back ensures a tidy entry
-                       trimws(final_input)
+                       trimws(.)
         # copy the final input to the relevent element of the dataframe
         pgn_dataframe[game_index,column_number] <- final_input
       }
@@ -99,4 +99,8 @@ pgn_to_dataframe <- function(input_pgn){
 
     game_index <- game_index + 1
   }
+
+  # FUNCTIONALITY TO DO: Convert column data from characters to a relevant type
+
+  return(pgn_dataframe)
 }
