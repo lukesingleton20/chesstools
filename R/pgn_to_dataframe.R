@@ -22,7 +22,11 @@ pgn_to_dataframe <- function(input_pgn){
   removed_carriage_pgn <- stringr::str_replace_all(input_pgn,"\\r"," ")
   removed_lines_pgn <- stringr::str_replace_all(removed_carriage_pgn,"\\n"," ")
   removed_first_event_pgn <- stringr::str_replace(removed_lines_pgn,"\\[Event \"","")
+<<<<<<< HEAD
   split_pgn <- strsplit(removed_first_event_pgn,"\\[Event \"")
+=======
+  split_pgn <- stringr::strsplit(removed_first_event_pgn,"\\[Event \"")
+>>>>>>> 1fe2a81f30e495fb59aa728351bf105bf0301922
   flattened_pgn <- unlist(split_pgn)
   restored_whitespace_pgn <- stringr::str_replace_all(flattened_pgn,"\\s+"," ")
   pgn_list <- strsplit(restored_whitespace_pgn, "\"\\]")
