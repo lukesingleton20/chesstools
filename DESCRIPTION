@@ -12,4 +12,4 @@ LazyData: true
 URL: https://github.com/lukesingleton20/chesstools
 BugReports: https://github.com/lukesingleton20/chesstools/issues
 RoxygenNote: 7.2.1
-Imports: stringr, readr, httr, curl
+Imports: stringr, httr, curl
