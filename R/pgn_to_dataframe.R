@@ -6,6 +6,7 @@
 #'
 #' @return dataframe
 #' @import stringr
+#' @importFrom magrittr %>%
 #' @export
 #'
 #' @examples
@@ -19,13 +20,13 @@ pgn_to_dataframe <- function(input_pgn){
   # strsplit() to create a list per game, with a sublist for each element of game
   # information; whilst the pgn database is flattened, however, we want to restore
   # any whitespace to a single space.
-  removed_carriage_pgn <- stringr::str_replace_all(input_pgn,"\\r"," ")
-  removed_lines_pgn <- stringr::str_replace_all(removed_carriage_pgn,"\\n"," ")
-  removed_first_event_pgn <- stringr::str_replace(removed_lines_pgn,"\\[Event \"","")
-  split_pgn <- strsplit(removed_first_event_pgn,"\\[Event \"")
-  flattened_pgn <- unlist(split_pgn)
-  restored_whitespace_pgn <- stringr::str_replace_all(flattened_pgn,"\\s+"," ")
-  pgn_list <- strsplit(restored_whitespace_pgn, "\"\\]")
+  pgn_list <- stringr::str_replace_all(input_pgn,"\\r"," ") %>%
+              stringr::str_replace_all(.,"\\n"," ") %>%
+              stringr::str_replace(.,"\\[Event \"","") %>%
+              strsplit(.,"\\[Event \"") %>%
+              unlist(.) %>%
+              stringr::str_replace_all(.,"\\s+"," ") %>%
+              strsplit(., "\"\\]")
 
   # we now ensure that we standardise all the elements, i.e. add the 'Moves'
   # prefix to the move element (which is always the last element of a pgn) and
@@ -39,10 +40,10 @@ pgn_to_dataframe <- function(input_pgn){
   }
 
   # create the empty dataframe and populate the standardised headings
-  lookup_table <- c("Event","EventType","EventRounds","Site","Date","Time",
-                    "TimeControl","WhiteTeam","BlackTeam","Section","Round","Board","WhiteTitle",
-                    "White", "WhiteElo","BlackTitle","Black","BlackElo",
-                    "ECO","PlyCount","Result","Termination","Moves")
+  lookup_table <- c("Event","Site","Date","Time","EventType","EventRounds","TimeControl",
+                    "WhiteTeam","WhiteTeamCountry","BlackTeam","BlackTeamCountry",
+                    "Section","Round","Board","White","WhiteTitle", "WhiteElo",
+                    "Black","BlackTitle","BlackElo","ECO","PlyCount","Result","Termination","Moves")
   pgn_dataframe <- data.frame(matrix(ncol = length(lookup_table), nrow = length(pgn_list)),stringsAsFactors = FALSE)
   colnames(pgn_dataframe) <- lookup_table
 
@@ -72,23 +73,23 @@ pgn_to_dataframe <- function(input_pgn){
         if(column_number == match("Moves",lookup_table)){
 
           while(grepl("\\(|\\)|\\{|\\}",pgn_game_info) == TRUE){
-            pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\([^\\(]*?\\)"," ")
-            pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\{[^\\{]*?\\}"," ")
+            pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\([^\\(]*?\\)"," ") %>%
+                             stringr::str_replace_all(pgn_game_info,"\\{[^\\{]*?\\}"," ")
           }
           # this removes information such as arrows
-          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\$\\d{1,2}"," ")
+          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\$\\d{1,2}"," ") %>%
           # this removes extended black notation (i.e. 7...) that is added around
           # comments and variations
-          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\d{1,3}\\.{3}"," ")
+                           stringr::str_replace_all(pgn_game_info,"\\d{1,3}\\.{3}"," ") %>%
           # we then restore any extraneous whitespace to a single space
-          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\s+"," ")
+                           stringr::str_replace_all(pgn_game_info,"\\s+"," ")
         }
 
         # for the final input into the dataframe element, we remove the game
         # information prefix (i.e. "[Event \")
-        final_input <- sub(".* \"","",pgn_game_info)
+        final_input <- sub(".* \"","",pgn_game_info) %>%
         # trimming the whitespace from both the front and back ensures a tidy entry
-        final_input <- trimws(final_input)
+                       trimws(final_input)
         # copy the final input to the relevent element of the dataframe
         pgn_dataframe[game_index,column_number] <- final_input
       }
