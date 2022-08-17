@@ -5,7 +5,7 @@
 #' @param input_pgn
 #'
 #' @return dataframe
-#' @import readr, stringr
+#' @import stringr
 #' @export
 #'
 #' @examples
@@ -19,12 +19,12 @@ pgn_to_dataframe <- function(input_pgn){
   # strsplit() to create a list per game, with a sublist for each element of game
   # information; whilst the pgn database is flattened, however, we want to restore
   # any whitespace to a single space.
-  removed_carriage_pgn <- str_replace_all(input_pgn,"\\r"," ")
-  removed_lines_pgn <- str_replace_all(removed_carriage_pgn,"\\n"," ")
-  removed_first_event_pgn <- str_replace(removed_lines_pgn,"\\[Event \"","")
+  removed_carriage_pgn <- stringr::str_replace_all(input_pgn,"\\r"," ")
+  removed_lines_pgn <- stringr::str_replace_all(removed_carriage_pgn,"\\n"," ")
+  removed_first_event_pgn <- stringr::str_replace(removed_lines_pgn,"\\[Event \"","")
   split_pgn <- strsplit(removed_first_event_pgn,"\\[Event \"")
   flattened_pgn <- unlist(split_pgn)
-  restored_whitespace_pgn <- str_replace_all(flattened_pgn,"\\s+"," ")
+  restored_whitespace_pgn <- stringr::str_replace_all(flattened_pgn,"\\s+"," ")
   pgn_list <- strsplit(restored_whitespace_pgn, "\"\\]")
 
   # we now ensure that we standardise all the elements, i.e. add the 'Moves'
@@ -56,7 +56,7 @@ pgn_to_dataframe <- function(input_pgn){
       # extract the entire string from the current element
       pgn_game_info <- pgn_list[[game_index]][[game_info_index]]
       # pull the game information type
-      column_lookup <- str_extract(pgn_game_info,"\\w+")
+      column_lookup <- stringr::str_extract(pgn_game_info,"\\w+")
       # and match it against the dataframe column headings, to get the number
       # of the column we want to copy this string to; it returns 0 if it cannot
       # find an equivalent column heading in the dataframe
@@ -72,16 +72,16 @@ pgn_to_dataframe <- function(input_pgn){
         if(column_number == match("Moves",lookup_table)){
 
           while(grepl("\\(|\\)|\\{|\\}",pgn_game_info) == TRUE){
-            pgn_game_info <- str_replace_all(pgn_game_info,"\\([^\\(]*?\\)"," ")
-            pgn_game_info <- str_replace_all(pgn_game_info,"\\{[^\\{]*?\\}"," ")
+            pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\([^\\(]*?\\)"," ")
+            pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\{[^\\{]*?\\}"," ")
           }
           # this removes information such as arrows
-          pgn_game_info <- str_replace_all(pgn_game_info,"\\$\\d{1,2}"," ")
+          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\$\\d{1,2}"," ")
           # this removes extended black notation (i.e. 7...) that is added around
           # comments and variations
-          pgn_game_info <- str_replace_all(pgn_game_info,"\\d{1,3}\\.{3}"," ")
+          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\d{1,3}\\.{3}"," ")
           # we then restore any extraneous whitespace to a single space
-          pgn_game_info <- str_replace_all(pgn_game_info,"\\s+"," ")
+          pgn_game_info <- stringr::str_replace_all(pgn_game_info,"\\s+"," ")
         }
 
         # for the final input into the dataframe element, we remove the game
