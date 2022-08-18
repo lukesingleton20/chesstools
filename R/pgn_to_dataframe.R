@@ -5,7 +5,7 @@
 #' @param input_pgn
 #'
 #' @return dataframe
-#' @import stringr
+#' @import stringr, stringi, readr
 #' @importFrom magrittr %>%
 #' @export
 #'
@@ -20,7 +20,8 @@ pgn_to_dataframe <- function(input_pgn){
   # strsplit() to create a list per game, with a sublist for each element of game
   # information; whilst the pgn database is flattened, however, we want to restore
   # any whitespace to a single space.
-  pgn_list <- stringr::str_replace_all(input_pgn,"\\r"," ") %>%
+  pgn_list <- read_file(input_pgn) %>%
+              stringr::str_replace_all(.,"\\r"," ") %>%
               stringr::str_replace_all(.,"\\n"," ") %>%
               stringr::str_replace(.,"\\[Event \"","") %>%
               strsplit(.,"\\[Event \"") %>%
@@ -52,6 +53,9 @@ pgn_to_dataframe <- function(input_pgn){
   game_index <- 1
   for(game in pgn_list){
 
+    # we declare utc_time here, so it can be used in the nested while loop below
+    utc_time <- character()
+
     game_info_index <- 1
     while(game_info_index <= lengths(pgn_list[game_index])){
       # extract the entire string from the current element
@@ -69,7 +73,7 @@ pgn_to_dataframe <- function(input_pgn){
         # often the 'moves' element of a pgn can contain a lot of extraneous
         # information put there by software (i.e. variations, comments, arrows etc.)
         # we have to loop over the element until we have removed all brackets from
-        # comments or variations as to remove nested brackets
+        # comments or variations in order to remove pesky nested brackets
         if(column_number == match("Moves",lookup_table)){
 
           while(grepl("\\(|\\)|\\{|\\}",pgn_game_info) == TRUE){
@@ -87,21 +91,112 @@ pgn_to_dataframe <- function(input_pgn){
 
         # for the final input into the dataframe element, we remove the game
         # information prefix (i.e. "[Event \")
-        final_input <- sub(".* \"","",pgn_game_info) %>%
+        final_input <- sub(".* \"","",pgn_game_info)
+
         # trimming the whitespace from both the front and back ensures a tidy entry
-                       trimws(.)
+        final_input <- trimws(final_input)
+
         # copy the final input to the relevent element of the dataframe
         pgn_dataframe[game_index,column_number] <- final_input
+      }
+
+      # if there is "UTCTime" game information, we extract it here in case we are
+      # unable to find the more standard "Time" game information
+      if(grepl("[UTCTime \"",pgn_game_info,fixed=TRUE) == TRUE){
+        utc_time <- stringr::str_extract(pgn_game_info,"(?<=\\[UTCTime \").*")
       }
 
       game_info_index <- game_info_index + 1
     }
 
+    # now we carry out some final checks on each row of data
+
+    # if we have been unable to find "Time" game information but have been able to find "UTCTime"
+    # information, we use that instead
+    if(length(utc_time) > 0 & is.na(pgn_dataframe[game_index,"Time"]) == TRUE){
+      pgn_dataframe[game_index,"Time"] <- utc_time
+    }
+
+    # if a game within the PGN has no "PlyCount" information listed, we can pull
+    # this from the "Moves" element
+    if(is.na(pgn_dataframe[game_index, "PlyCount"]) == TRUE){
+      pgn_dataframe[game_index,"PlyCount"] <- stringi::stri_extract_last_regex(pgn_dataframe[game_index,"Moves"],"(?<=\\s)\\d{1,}(?=\\.)")
+    }
+
+    # standardise input for "Termination", first by checking for keywords already provided
+    if(grepl("Abandoned|abandoned", pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Abandoned"
+    } else if(grepl("Time|time",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Won on time"
+    } else if(grepl("Insufficient|insufficient",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Drawn due to insufficient material"
+    } else if(grepl("Repetition|repetition",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Drawn by repetition"
+    } else if(grepl("Agreement|agreement",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Drawn by agreement"
+    } else if(grepl("50|Fifty|fifty",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Drawn by 50-move rule"
+    } else if(grepl("Stalemate|stalemate",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Drawn by stalemate"
+    } else if(grepl("Resignation|resignation",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Won by resignation"
+    } else if(grepl("Checkmate|checkmate",pgn_dataframe[game_index, "Termination"]) == TRUE){
+      pgn_dataframe[game_index, "Termination"] <- "Won by checkmate"
+    } else {
+
+      #if there are no keywords present, determine from "Moves" how the game was terminated
+
+      # if there is less than seven characters after the first move, the game was abandoned
+      # i.e. if "Moves" contains "1-0" or "1. e4 1-0"
+      if(grepl("1.{7}.*",pgn_dataframe[game_index, "Moves"]) == FALSE){
+        pgn_dataframe[game_index, "Termination"] <- "Abandoned"
+
+        # if a decisive result is present (i.e. 1-0 or 0-1)
+      } else if(grepl("1-0|1 - 0|0-1|0 - 1",pgn_dataframe[game_index, "Moves"]) == TRUE){
+
+        # check for the symbol denoting checkmate
+        if(grepl("#",pgn_dataframe[game_index, "Moves"]) == TRUE){
+          pgn_dataframe[game_index, "Termination"] <- "Won by checkmate"
+        } else {
+
+          # if the game was decisive but did not end by checkmate, then it either
+          # ended due to timeout or resignation - most chess software and websites
+          # indicate a timeout as a special case and mention the keyword "time"
+          # so are captured above, which means we are left with resignation as
+          # the only remaining type of termination result here
+          pgn_dataframe[game_index, "Termination"] <- "Won by resignation"
+        }
+      } else {
+
+        # if none of the above are true, then the game was drawn - unfortunately,
+        # it is impossible to determine whether the game was drawn by agreement,
+        # three-fold repetition, the fifty-move rule, insufficient material or stalemate -
+        # the best we can do is declare "(reason unspecified)"
+        pgn_dataframe[game_index, "Termination"] <- "Drawn (reason unspecified)"
+      }
+    }
+
     game_index <- game_index + 1
   }
 
-  # FUNCTIONALITY TO DO: Convert column data from characters to a relevant type
-  # and add 'PlyCount' where missing
+  # finally we ensure that each column is converted to the correct data type, we
+  # suppress warnings, otherwise a warning message will appear when there is an NA
+  # present within the column
+
+  # note that dates here are optimised for windows, especially excel
+  pgn_dataframe$Date <- suppressWarnings(as.Date(pgn_dataframe$Date,tryFormats=c("%d/%m/%y","%d/%m/%Y",
+                                                                                 "%d.%m.%y","%d.%m.%Y",
+                                                                                 "%y/%m/%d","%Y/%m/%d",
+                                                                                 "%y.%m.%d","%Y.%m.%d",
+                                                                                 "%m/%d/%y","%m/%d/%Y",
+                                                                                 "%m.%d.%y","%m.%d.%Y"),
+                                                 origin="1899-12-30"))
+  pgn_dataframe$EventRounds <- suppressWarnings(as.integer(pgn_dataframe$EventRound))
+  pgn_dataframe$Round <- suppressWarnings(as.integer(pgn_dataframe$Round))
+  pgn_dataframe$Board <- suppressWarnings(as.integer(pgn_dataframe$Board))
+  pgn_dataframe$WhiteElo <- suppressWarnings(as.integer(pgn_dataframe$WhiteElo))
+  pgn_dataframe$BlackElo <- suppressWarnings(as.integer(pgn_dataframe$BlackElo))
+  pgn_dataframe$PlyCount <- suppressWarnings(as.integer(pgn_dataframe$PlyCount))
 
   return(pgn_dataframe)
 }

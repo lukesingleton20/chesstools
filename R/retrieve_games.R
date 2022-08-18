@@ -130,7 +130,6 @@ retrieve_chesscom_games <- function(players){
     for(game in tournament_index){
       tournament <- str_extract(pgn_database[game],"(?<=www\\.chess\\.com\\/tournament\\/).*?(?=\"\\])")
       pgn_database[game] <- str_replace(pgn_database[game],"(?<=\\[Event \").*?(?=\"\\])",tournament)
-      print(pgn_database[game])
     }
 
     # we then collapse the raw file to get something closer to a standard pgn database
@@ -139,7 +138,7 @@ retrieve_chesscom_games <- function(players){
     # now we convert the pgn database into the otbchess standard pgn dataframe
     pgn_dataframe <- pgn_to_dataframe(pgn_database)
 
-    return(games_dataframe)
+    return(pgn_dataframe)
 
   }
 
