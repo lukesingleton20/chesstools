@@ -9,7 +9,7 @@
 Chesstools provides the user with functions to convert any pgn database
 into the standardised pgn dataframe used by otbchess, and fuctions to
 download all rated games of one or more players from Lichess and
-Chess.com, returned in a dataframe.
+Chess.com, returned in an otbchess standardised dataframe.
 
 ## Installation
 

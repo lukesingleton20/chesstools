@@ -65,11 +65,11 @@ pgn_to_dataframe <- function(input_pgn){
 
       # if this element has an equivalent heading in the dataframe
       if(column_number != 0){
+
         # often the 'moves' element of a pgn can contain a lot of extraneous
         # information put there by software (i.e. variations, comments, arrows etc.)
         # we have to loop over the element until we have removed all brackets from
         # comments or variations as to remove nested brackets
-
         if(column_number == match("Moves",lookup_table)){
 
           while(grepl("\\(|\\)|\\{|\\}",pgn_game_info) == TRUE){
@@ -101,6 +101,7 @@ pgn_to_dataframe <- function(input_pgn){
   }
 
   # FUNCTIONALITY TO DO: Convert column data from characters to a relevant type
+  # and add 'PlyCount' where missing
 
   return(pgn_dataframe)
 }

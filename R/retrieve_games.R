@@ -111,11 +111,27 @@ retrieve_chesscom_games <- function(players){
       tmp <- tempfile()
       curl::curl_download(paste0(month,"/pgn"),tmp)
       pgn_monthly_database <- readLines(tmp) %>% paste(., collapse = "\n")
-      pgn_database[count] <- paste0(pgn_monthly_database)
+      pgn_database[count] <- paste0(pgn_monthly_database,"\n\n")
       count <- count + 1
     }
 
-    # FUNCTIONALITY TO ADD: replace Event with Tournament details where possible
+    # unfortunately, as of August 2022, rather than returning the tournament name
+    # within "Events" as is best practice, chess.com adds tournament information
+    # under an unusual "Tournament" heading, which is not a practice seen anywhere else,
+    # so we must first make a list of games so that we can isolate this information
+    # and move it under "Events"
+    pgn_database <- strsplit(pgn_database, "\n\n\n") %>% unlist(.)
+
+    # build an index of which games have the "Tournament" heading present
+    tournament_index <- which(grepl("[Tournament",pgn_database, fixed = TRUE))
+
+    # next we replace the information contained in "Event" with the information
+    # contained within "Tournament"
+    for(game in tournament_index){
+      tournament <- str_extract(pgn_database[game],"(?<=www\\.chess\\.com\\/tournament\\/).*?(?=\"\\])")
+      pgn_database[game] <- str_replace(pgn_database[game],"(?<=\\[Event \").*?(?=\"\\])",tournament)
+      print(pgn_database[game])
+    }
 
     # we then collapse the raw file to get something closer to a standard pgn database
     pgn_database <- paste(pgn_database,collapse="\n")
