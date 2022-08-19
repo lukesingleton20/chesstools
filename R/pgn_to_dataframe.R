@@ -20,7 +20,7 @@ pgn_to_dataframe <- function(input_pgn){
   # strsplit() to create a list per game, with a sublist for each element of game
   # information; whilst the pgn database is flattened, however, we want to restore
   # any whitespace to a single space.
-  pgn_list <- read_file(input_pgn) %>%
+  pgn_list <- readr::read_file(input_pgn) %>%
               stringr::str_replace_all(.,"\\r"," ") %>%
               stringr::str_replace_all(.,"\\n"," ") %>%
               stringr::str_replace(.,"\\[Event \"","") %>%
