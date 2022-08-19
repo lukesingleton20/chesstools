@@ -43,7 +43,7 @@ pgn_to_dataframe <- function(input_pgn){
   # create the empty dataframe and populate the standardised headings
   lookup_table <- c("Event","Site","Date","Time","EventType","EventRounds","TimeControl",
                     "WhiteTeam","WhiteTeamCountry","BlackTeam","BlackTeamCountry",
-                    "Section","Round","Board","White","WhiteTitle", "WhiteElo",
+                    "Section","Stage","Round","Board","White","WhiteTitle", "WhiteElo",
                     "Black","BlackTitle","BlackElo","ECO","PlyCount","Result","Termination","Moves")
   pgn_dataframe <- data.frame(matrix(ncol = length(lookup_table), nrow = length(pgn_list)),stringsAsFactors = FALSE)
   colnames(pgn_dataframe) <- lookup_table
@@ -120,27 +120,36 @@ pgn_to_dataframe <- function(input_pgn){
     # if a game within the PGN has no "PlyCount" information listed, we can pull
     # this from the "Moves" element
     if(is.na(pgn_dataframe[game_index, "PlyCount"]) == TRUE){
-      pgn_dataframe[game_index,"PlyCount"] <- stringi::stri_extract_last_regex(pgn_dataframe[game_index,"Moves"],"(?<=\\s)\\d{1,}(?=\\.)")
+      ply_count <- as.integer(stringi::stri_extract_last_regex(pgn_dataframe[game_index,"Moves"],"(?<=\\s)\\d{1,}(?=\\.)"))
+
+      # if there is no black move then there should be an uneven number for PlyCount
+      # which is the number of "half moves"
+      if(grepl(paste0(ply_count,"\\.\\s\\S*\\s\\S*\\s"),pgn_dataframe[game_index,"Moves"])){
+        ply_count <- ply_count*2
+      } else {
+        ply_count <- (ply_count*2)-1
+      }
+      pgn_dataframe[game_index,"PlyCount"] <- ply_count
     }
 
     # standardise input for "Termination", first by checking for keywords already provided
     if(grepl("Abandoned|abandoned", pgn_dataframe[game_index, "Termination"]) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Abandoned"
-    } else if(grepl("Time|time",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("time",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Won on time"
-    } else if(grepl("Insufficient|insufficient",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("insufficient",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Drawn due to insufficient material"
-    } else if(grepl("Repetition|repetition",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("repetition",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Drawn by repetition"
-    } else if(grepl("Agreement|agreement",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("agreement",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Drawn by agreement"
-    } else if(grepl("50|Fifty|fifty",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("50|fifty",pgn_dataframe[game_index, "Termination"]) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Drawn by 50-move rule"
-    } else if(grepl("Stalemate|stalemate",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("stalemate",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Drawn by stalemate"
-    } else if(grepl("Resignation|resignation",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("resignation",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Won by resignation"
-    } else if(grepl("Checkmate|checkmate",pgn_dataframe[game_index, "Termination"]) == TRUE){
+    } else if(grepl("checkmate",pgn_dataframe[game_index, "Termination"],ignore.case=T) == TRUE){
       pgn_dataframe[game_index, "Termination"] <- "Won by checkmate"
     } else {
 
@@ -152,7 +161,7 @@ pgn_to_dataframe <- function(input_pgn){
         pgn_dataframe[game_index, "Termination"] <- "Abandoned"
 
         # if a decisive result is present (i.e. 1-0 or 0-1)
-      } else if(grepl("1-0|1 - 0|0-1|0 - 1",pgn_dataframe[game_index, "Moves"]) == TRUE){
+      } else if(grepl("1-0|0-1",pgn_dataframe[game_index, "Moves"]) == TRUE){
 
         # check for the symbol denoting checkmate
         if(grepl("#",pgn_dataframe[game_index, "Moves"]) == TRUE){
