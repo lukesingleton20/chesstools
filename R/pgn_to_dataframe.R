@@ -201,7 +201,7 @@ pgn_to_dataframe <- function(input_pgn){
                                                                                  "%m.%d.%y","%m.%d.%Y"),
                                                  origin="1899-12-30"))
   pgn_dataframe$EventRounds <- suppressWarnings(as.integer(pgn_dataframe$EventRound))
-  pgn_dataframe$Round <- suppressWarnings(as.integer(pgn_dataframe$Round))
+  pgn_dataframe$Round <- suppressWarnings(as.integer(floor(pgn_dataframe$Round)))
   pgn_dataframe$Board <- suppressWarnings(as.integer(pgn_dataframe$Board))
   pgn_dataframe$WhiteElo <- suppressWarnings(as.integer(pgn_dataframe$WhiteElo))
   pgn_dataframe$BlackElo <- suppressWarnings(as.integer(pgn_dataframe$BlackElo))
